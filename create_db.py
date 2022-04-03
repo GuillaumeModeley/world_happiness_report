@@ -31,6 +31,13 @@ def create_database(db_path):
                           country_id INTEGER,
                           score REAL,
                           year TEXT,
+                          gdp_per_capita REAL,
+                          family REAL,
+                          social_support REAL,
+                          healthy_life_expectancy REAL,
+                          freedom_to_make_life_choices REAL,
+                          generosity REAL,
+                          perceptions_of_corruption REAL,
                           FOREIGN KEY (country_id)
                               REFERENCES countries (country_id)
                    )''')
@@ -41,4 +48,3 @@ def create_database(db_path):
 
 if __name__ == '__main__':
     create_database("out/happiness.db")
-

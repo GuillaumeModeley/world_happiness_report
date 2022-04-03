@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import glob
 import json
 import re
 import sqlite3
@@ -44,7 +45,7 @@ def extract_countries_info(countries_info_path, db_path):
 
 
 def normalize_column_name(name):
-    normalized_names = [ 'country', 'score' ]
+    normalized_names = [ 'country', 'score', 'gdp', 'family', 'social', 'health', 'freedom', 'generosity', 'corruption' ]
     for n in normalized_names:
         if n in name.lower():
             return n
@@ -73,26 +74,48 @@ def extract_happiness_report_data(happiness_data_path, db_path, year):
 
     dataset['year'] = year
 
+    # handle missing columns in CSV data
+    for header in [ 'family', 'social' ]:
+        if header not in  dataset.columns:
+            dataset[header] = None
+
     cursor.executemany('''INSERT INTO happiness_report
                               (country_id,
                                year,
-                               score)
+                               score,
+                               gdp_per_capita,
+                               family,
+                               social_support,
+                               healthy_life_expectancy,
+                               freedom_to_make_life_choices,
+                               generosity,
+                               perceptions_of_corruption)
                           VALUES
                               ((SELECT country_id FROM countries WHERE country_name = ?),
-                              ?, ?
+                              ?, ?, ?, ?, ?, ?, ?, ?, ?
                               )''',
-                       [ (c, y, s) for c, y, s in zip(dataset['country'], dataset['year'], dataset['score']) ])
+                       [ (c, y, s, g, fa, ss, hle, ftmlc, gen, cor) for c, y, s, g, fa, ss, hle, ftmlc, gen, cor in zip(
+                           dataset['country'],
+                           dataset['year'],
+                           dataset['score'],
+                           dataset['gdp'],
+                           dataset['family'],
+                           dataset['social'],
+                           dataset['health'],
+                           dataset['freedom'],
+                           dataset['generosity'],
+                           dataset['corruption']) ])
 
     connection.commit()
     connection.close()
 
 
 if __name__ == '__main__':
-    extract_countries_info('data/countries_continents_codes_flags_url.json', 'happiness.db')
+    extract_countries_info('data/countries_continents_codes_flags_url.json', 'out/happiness.db')
 
-    yearly_report_file = 'data/2015_Happiness_report.csv'
-    year = extract_year(yearly_report_file)
-    if not year:
-        raise Exception("Failed to extract year from filename: %s" % yearly_report_file)
+    for yearly_report_file in glob.glob('data/*.csv'):
+        year = extract_year(yearly_report_file)
+        if not year:
+            raise Exception("Failed to extract year from filename: %s" % yearly_report_file)
 
-    extract_happiness_report_data(yearly_report_file, 'out/happiness.db', year)
+        extract_happiness_report_data(yearly_report_file, 'out/happiness.db', year)
