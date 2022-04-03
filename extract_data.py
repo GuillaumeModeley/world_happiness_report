@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 
 import json
+import re
 import sqlite3
+import pandas as pd
+
 
 def extract_countries_info(countries_info_path, db_path):
     '''Extract countries information from a JSON-formatted file,
@@ -40,5 +43,56 @@ def extract_countries_info(countries_info_path, db_path):
     connection.close()
 
 
+def normalize_column_name(name):
+    normalized_names = [ 'country', 'score' ]
+    for n in normalized_names:
+        if n in name.lower():
+            return n
+    return name
+
+
+def extract_year(filename):
+    '''Extract YYYY string from filename'''
+    match = re.search(r'\d{4}', filename)
+    if match:
+        return match[0]
+    return None
+
+
+def extract_happiness_report_data(happiness_data_path, db_path, year):
+    '''Extract yearly World Happiness Report data from a CSV-formatted file
+       and store it in the db_path database.
+    '''
+    connection = sqlite3.connect(db_path)
+
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+
+    dataset = pd.read_csv(happiness_data_path)
+    dataset.rename(columns=normalize_column_name, inplace=True)
+
+    dataset['year'] = year
+
+    cursor.executemany('''INSERT INTO happiness_report
+                              (country_id,
+                               year,
+                               score)
+                          VALUES
+                              ((SELECT country_id FROM countries WHERE country_name = ?),
+                              ?, ?
+                              )''',
+                       [ (c, y, s) for c, y, s in zip(dataset['country'], dataset['year'], dataset['score']) ])
+
+    connection.commit()
+    connection.close()
+
+
 if __name__ == '__main__':
-    extract_countries_info('data/countries_continents_codes_flags_url.json', 'out/happiness.db')
+    extract_countries_info('data/countries_continents_codes_flags_url.json', 'happiness.db')
+
+    yearly_report_file = 'data/2015_Happiness_report.csv'
+    year = extract_year(yearly_report_file)
+    if not year:
+        raise Exception("Failed to extract year from filename: %s" % yearly_report_file)
+
+    extract_happiness_report_data(yearly_report_file, 'out/happiness.db', year)

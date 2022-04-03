@@ -30,6 +30,7 @@ def create_database(db_path):
                           id INTEGER PRIMARY KEY,
                           country_id INTEGER,
                           score REAL,
+                          year TEXT,
                           FOREIGN KEY (country_id)
                               REFERENCES countries (country_id)
                    )''')
