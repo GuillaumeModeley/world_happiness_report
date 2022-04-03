@@ -2,9 +2,13 @@
 
 import glob
 import json
+import os
 import re
 import sqlite3
 import pandas as pd
+
+happiness_db_path = 'db/happiness.db'
+modelling_record_csv_path = 'out/modelling_record.csv'
 
 
 def extract_countries_info(countries_info_path, db_path):
@@ -110,12 +114,57 @@ def extract_happiness_report_data(happiness_data_path, db_path, year):
     connection.close()
 
 
+def generate_modelling_record(db_path, csv_path):
+    '''Generate modeling record file in CSV format with ranking info.'''
+
+    if not os.path.exists(os.path.dirname(csv_path)):
+        os.mkdir(os.path.dirname(csv_path))
+
+    connection = sqlite3.connect(db_path)
+
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+
+    query = '''
+        SELECT
+            c.country_name,
+            h.score,
+            h.year,
+            r.region_name,
+            RANK () OVER (
+                PARTITION BY h.year
+                ORDER BY h.score DESC
+            ) score_rank_by_year,
+            RANK () OVER (
+                PARTITION BY h.year, r.region_name
+                ORDER BY h.score DESC
+            ) score_rank_by_year_by_region
+        FROM
+            countries c
+        JOIN
+            happiness_report h
+        ON
+            h.country_id = c.country_id
+        JOIN
+            regions r
+        ON
+            c.region_id = r.region_id
+        ORDER BY
+            h.year, r.region_name, score_rank_by_year_by_region ASC;
+            '''
+
+    ds = pd.read_sql(query, connection)
+    ds.to_csv(csv_path)
+
+
 if __name__ == '__main__':
-    extract_countries_info('data/countries_continents_codes_flags_url.json', 'out/happiness.db')
+    extract_countries_info('data/countries_continents_codes_flags_url.json', happiness_db_path)
 
     for yearly_report_file in glob.glob('data/*.csv'):
         year = extract_year(yearly_report_file)
         if not year:
             raise Exception("Failed to extract year from filename: %s" % yearly_report_file)
 
-        extract_happiness_report_data(yearly_report_file, 'out/happiness.db', year)
+        extract_happiness_report_data(yearly_report_file, happiness_db_path, year)
+
+    generate_modelling_record(happiness_db_path, modelling_record_csv_path)

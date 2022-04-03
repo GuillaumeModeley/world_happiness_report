@@ -1,9 +1,16 @@
 #!/usr/bin/python3
 
+import os
 import sqlite3
+
+happiness_db_path = 'db/happiness.db'
+
 
 def create_database(db_path):
     '''Create a database to store the World Happiness Report data'''
+
+    if not os.path.exists(os.path.dirname(db_path)):
+        os.mkdir(os.path.dirname(db_path))
 
     connection = sqlite3.connect(db_path)
 
@@ -47,4 +54,4 @@ def create_database(db_path):
 
 
 if __name__ == '__main__':
-    create_database("out/happiness.db")
+    create_database(happiness_db_path)
