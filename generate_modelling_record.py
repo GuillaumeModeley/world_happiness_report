@@ -22,33 +22,33 @@ def generate_modelling_record(db_path, csv_path, parquet_path):
 
     query = '''
         SELECT
-            h.year,
-            c.country_name,
-            c.capital_city,
-            c.latitude,
-            c.longitude,
-            c.image_url,
-            r.region_code,
+            h.year AS Year,
+            c.country_name AS Country,
+            c.capital_city AS "Capital City",
+            c.latitude AS Latitude,
+            c.longitude AS Longitude,
+            c.image_url AS "Country Url",
+            r.region_code AS "Region Code",
             CASE r.region_name
                 WHEN ''
                     THEN 'Nan'
                 ELSE UPPER(r.region_name)
-            END region,
-            h.score_rank_by_year,
-            h.score_rank_by_year_by_region,
-            h.score,
+            END Region,
+            h.score_rank_by_year AS "Overall Rank",
+            h.score_rank_by_year_by_region AS "Rank Per Region",
+            h.score AS "Happiness Score",
             CASE
                 WHEN h.score > 5.6 THEN "Green"
                 WHEN h.score < 2.6 THEN "Red"
                 ELSE "Amber"
-            END happiness_status,
-            h.gdp_per_capita,
-            h.family,
-            h.social_support,
-            h.healthy_life_expectancy,
-            h.freedom_to_make_life_choices,
-            h.generosity,
-            h.perceptions_of_corruption
+            END "Happiness Status",
+            h.gdp_per_capita AS "GDP per capita",
+            h.family AS Family,
+            h.social_support AS "Social support",
+            h.healthy_life_expectancy AS "Healthy life expectancy",
+            h.freedom_to_make_life_choices AS "Freedom to make life choices",
+            h.generosity AS Generosity,
+            h.perceptions_of_corruption AS "Perceptions of corruption"
         FROM
             countries c
         JOIN
