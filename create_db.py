@@ -7,9 +7,9 @@ connection = sqlite3.connect("out/happiness.db")
 cursor = connection.cursor()
 
 cursor.execute('''CREATE TABLE countries (
-                      country_id INT PRIMARY KEY,
+                      country_id INTEGER PRIMARY KEY,
                       country_name TEXT NOT NULL,
-                      country_code INT
+                      country_code INTEGER
                )''')
 
 connection.commit()
