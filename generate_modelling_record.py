@@ -24,6 +24,9 @@ def generate_modelling_record(db_path, csv_path, parquet_path):
         SELECT
             h.year,
             c.country_name,
+            c.capital_city,
+            c.latitude,
+            c.longitude,
             c.image_url,
             r.region_code,
             CASE r.region_name

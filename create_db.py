@@ -27,6 +27,9 @@ def create_database(db_path):
                           country_id INTEGER PRIMARY KEY,
                           country_name TEXT NOT NULL,
                           country_code INTEGER,
+                          capital_city TEXT,
+                          latitude REAL,
+                          longitude REAL,
                           image_url TEXT,
                           region_id INTEGER,
                           FOREIGN KEY (region_id)

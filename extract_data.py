@@ -4,9 +4,11 @@ import glob
 import json
 import re
 import sqlite3
+import urllib
 import pandas as pd
 
 happiness_db_path = 'db/happiness.db'
+worldbank_query_url = "http://api.worldbank.org/v2/country?format=json&per_page=500"
 
 
 def extract_countries_info(countries_info_path, db_path):
@@ -112,6 +114,38 @@ def extract_happiness_report_data(happiness_data_path, db_path, year):
     connection.close()
 
 
+def retrieve_data_from_worldbank(url, db_path):
+    '''Retrieve Capital city, Longitude & Latitude using World Bank's API.'''
+
+    with urllib.request.urlopen(url) as f:
+        json_string = f.read()
+
+    data = json.loads(json_string)
+    # drop the 1st item containing paging info
+    data = data[1]
+
+    connection = sqlite3.connect(db_path)
+
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+
+    for country in data:
+        cursor.execute('''UPDATE countries
+                          SET capital_city = ?,
+                              latitude = ?,
+                              longitude = ?
+                          WHERE
+                              country_name = ?
+                        ''',
+                       (country['capitalCity'],
+                        country['latitude'],
+                        country['longitude'],
+                        country['name']))
+
+    connection.commit()
+    connection.close()
+
+
 if __name__ == '__main__':
     extract_countries_info('data/countries_continents_codes_flags_url.json', happiness_db_path)
 
@@ -120,3 +154,5 @@ if __name__ == '__main__':
         if not year:
             raise Exception("Failed to extract year from filename: %s" % yearly_report_file)
         extract_happiness_report_data(yearly_report_file, happiness_db_path, year)
+
+    retrieve_data_from_worldbank(worldbank_query_url, happiness_db_path)
