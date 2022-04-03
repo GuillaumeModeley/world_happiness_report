@@ -114,6 +114,67 @@ def extract_happiness_report_data(happiness_data_path, db_path, year):
     connection.close()
 
 
+def store_ranks(db_path):
+    '''Calculate Happiness Score rank per year, and per region per year,
+       and store them in the database.
+    '''
+    connection = sqlite3.connect(db_path)
+
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+
+    cursor.execute('''
+        CREATE TEMP TABLE temp_happiness_report(
+            id INTEGER,
+            score_rank_by_year INTEGER,
+            score_rank_by_year_by_region INTEGER);
+        ''')
+
+    cursor.execute('''
+        INSERT INTO temp_happiness_report (id, score_rank_by_year, score_rank_by_year_by_region)
+        SELECT
+            h.id,
+            RANK () OVER (
+                PARTITION BY h.year
+                ORDER BY h.score DESC
+            ) score_rank_by_year,
+            RANK () OVER (
+                PARTITION BY h.year, c.region_id
+                ORDER BY h.score DESC
+            ) score_rank_by_year_by_region
+        FROM
+            happiness_report h
+        JOIN
+            countries c
+        ON
+            h.country_id = c.country_id;
+        ''')
+
+    cursor.execute('''
+        UPDATE happiness_report
+        SET score_rank_by_year = (
+            SELECT score_rank_by_year
+            FROM temp_happiness_report
+            WHERE temp_happiness_report.id = happiness_report.id ),
+        score_rank_by_year_by_region = (
+            SELECT score_rank_by_year_by_region
+            FROM temp_happiness_report
+            WHERE temp_happiness_report.id = happiness_report.id )
+        WHERE EXISTS (
+            SELECT *
+            FROM temp_happiness_report
+            WHERE temp_happiness_report.id = happiness_report.id
+        );
+        ''')
+
+    cursor.execute('''
+        DROP TABLE IF EXISTS temp_happiness_report;
+        ''')
+
+    connection.commit()
+    connection.close()
+
+
 def retrieve_data_from_worldbank(url, db_path):
     '''Retrieve Capital city, Longitude & Latitude using World Bank's API.'''
 
@@ -154,5 +215,7 @@ if __name__ == '__main__':
         if not year:
             raise Exception("Failed to extract year from filename: %s" % yearly_report_file)
         extract_happiness_report_data(yearly_report_file, happiness_db_path, year)
+
+    store_ranks(happiness_db_path)
 
     retrieve_data_from_worldbank(worldbank_query_url, happiness_db_path)

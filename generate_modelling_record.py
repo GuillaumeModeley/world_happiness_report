@@ -34,14 +34,8 @@ def generate_modelling_record(db_path, csv_path, parquet_path):
                     THEN 'Nan'
                 ELSE UPPER(r.region_name)
             END region,
-            RANK () OVER (
-                PARTITION BY h.year
-                ORDER BY h.score DESC
-            ) score_rank_by_year,
-            RANK () OVER (
-                PARTITION BY h.year, r.region_name
-                ORDER BY h.score DESC
-            ) score_rank_by_year_by_region,
+            h.score_rank_by_year,
+            h.score_rank_by_year_by_region,
             h.score,
             CASE
                 WHEN h.score > 5.6 THEN "Green"

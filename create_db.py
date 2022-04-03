@@ -41,6 +41,8 @@ def create_database(db_path):
                           country_id INTEGER,
                           score REAL,
                           year TEXT,
+                          score_rank_by_year INTEGER,
+                          score_rank_by_year_by_region INTEGER,
                           gdp_per_capita REAL,
                           family REAL,
                           social_support REAL,
