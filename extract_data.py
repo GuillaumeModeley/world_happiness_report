@@ -9,6 +9,7 @@ import pandas as pd
 
 happiness_db_path = 'db/happiness.db'
 modelling_record_csv_path = 'out/modelling_record.csv'
+modelling_record_parquet_path = 'out/modelling_record.parquet'
 
 
 def extract_countries_info(countries_info_path, db_path):
@@ -114,8 +115,8 @@ def extract_happiness_report_data(happiness_data_path, db_path, year):
     connection.close()
 
 
-def generate_modelling_record(db_path, csv_path):
-    '''Generate modeling record file in CSV format with ranking info.'''
+def generate_modelling_record(db_path, csv_path, parquet_path):
+    '''Generate modeling record files in CSV & parquet format with ranking info.'''
 
     if not os.path.exists(os.path.dirname(csv_path)):
         os.mkdir(os.path.dirname(csv_path))
@@ -172,7 +173,8 @@ def generate_modelling_record(db_path, csv_path):
             '''
 
     ds = pd.read_sql(query, connection)
-    ds.to_csv(csv_path)
+    ds.to_csv(csv_path, index=False)
+    #ds.to_parquet(parquet_path)
 
 
 if __name__ == '__main__':
@@ -185,4 +187,4 @@ if __name__ == '__main__':
 
         extract_happiness_report_data(yearly_report_file, happiness_db_path, year)
 
-    generate_modelling_record(happiness_db_path, modelling_record_csv_path)
+    generate_modelling_record(happiness_db_path, modelling_record_csv_path, modelling_record_parquet_path)
