@@ -127,10 +127,15 @@ def generate_modelling_record(db_path, csv_path):
 
     query = '''
         SELECT
-            c.country_name,
-            h.score,
             h.year,
-            r.region_name,
+            c.country_name,
+            c.image_url,
+            r.region_code,
+            CASE r.region_name
+                WHEN ''
+                    THEN 'Nan'
+                ELSE UPPER(r.region_name)
+            END region,
             RANK () OVER (
                 PARTITION BY h.year
                 ORDER BY h.score DESC
@@ -138,7 +143,20 @@ def generate_modelling_record(db_path, csv_path):
             RANK () OVER (
                 PARTITION BY h.year, r.region_name
                 ORDER BY h.score DESC
-            ) score_rank_by_year_by_region
+            ) score_rank_by_year_by_region,
+            h.score,
+            CASE
+                WHEN h.score > 5.6 THEN "Green"
+                WHEN h.score < 2.6 THEN "Red"
+                ELSE "Amber"
+            END happiness_status,
+            h.gdp_per_capita,
+            h.family,
+            h.social_support,
+            h.healthy_life_expectancy,
+            h.freedom_to_make_life_choices,
+            h.generosity,
+            h.perceptions_of_corruption
         FROM
             countries c
         JOIN
